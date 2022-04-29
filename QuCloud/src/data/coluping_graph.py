@@ -1,3 +1,13 @@
+#! /usr/bin/env python3
+
+import time
+import numpy as np
+import os.path
+from typing import Tuple, List
+import logging
+
+log = logging.getLogger(__name__)
+
 class Vertex:
     def __init__(self,key,value=0):
         self.id = key
@@ -65,35 +75,15 @@ class Graph:
 
     def __iter__(self):
         return iter(self.vertList.values())
-qubit_number=5               #量子位数
-w=0.1                        #权重
-value_error_list=[1.4,3.5,3.3,3.3,3.0]
-graph=Graph()
-for i in range(qubit_number):
-    graph.addVertex(i,value_error_list[i])
-graph.addEdge(0,1,0.5)
-graph.addEdge(1,2,1.2)
-graph.addEdge(1,3,1.0)
-graph.addEdge(3,4,1.3)
-cluster={}
-for i in range(5):
-    cluster[i]=i
-def Q(graph, cluster):
-    e = 0.0
-    a_2 = 0.0
-    cluster_degree_table = {}
-    for vtx in graph.getVertices():
-        label = cluster[vtx]
-        adj = graph.getVertex(vtx).getConnections()
-        for neighbor in adj:
-            if label == cluster[neighbor]:
-                e += 1
-        if label not in cluster_degree_table:
-            cluster_degree_table[label] =0
-        cluster_degree_table[label] += len(adj)
-    e /= 2 * graph.numberEdges
-    for label, cnt in cluster_degree_table.items():
-        a = 0.5 * cnt / graph.numberEdges
-        a_2 += a * a
-    Q = e - a_2
-    return Q
+
+if __name__ == "main":
+    Vertex_error = {"Q0" : 0.014, "Q1" : 0.035, "Q2" : 0.033, "Q3" : 0.033, "Q4" : 0.030}               #量子位数
+    Edge_error = {(0,1) : 0.005, (1,2) : 0.012, (1,3) : 0.01, (3,4) : 0.013}
+    graph=Graph()
+    for vertex in Vertex_error:
+        vertex_id = int(vertex[1])
+        graph.addVertex(vertex_id,Vertex_error[vertex])
+    for edge in Edge_error:
+        node0,node1 = edge
+        graph.addEdge(node0,node1,Edge_error[edge])
+    
