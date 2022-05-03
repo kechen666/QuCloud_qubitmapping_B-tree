@@ -8,6 +8,19 @@ import logging
 
 log = logging.getLogger(__name__)
 
+def change_Graph_to_List(graph):
+    List=[]
+    List_edge=[]
+    List_node=[]
+    node_list=[]
+    for i,j in graph.getEdges():
+        List.append([i,j])
+        List_edge.append(float(graph.getEdgeWeight(i,j)))
+    for i in graph.getVertices():
+        List_node.append(float(graph.vertList[i].getValue()))
+        node_list.append("node"+str(i))
+    return List, List_edge, List_node, node_list
+
 class Vertex:
     def __init__(self,key,value=0):
         self.id = key
@@ -75,6 +88,8 @@ class Graph:
 
     def __iter__(self):
         return iter(self.vertList.values())
+
+
 
 if __name__ == "main":
     Vertex_error = {"Q0" : 0.014, "Q1" : 0.035, "Q2" : 0.033, "Q3" : 0.033, "Q4" : 0.030}               #量子位数

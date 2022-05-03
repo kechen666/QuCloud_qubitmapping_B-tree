@@ -5,12 +5,14 @@ import numpy as np
 import os.path
 from typing import Tuple, List
 import logging
+import sys
 
 log = logging.getLogger(__name__)
 
 class DATAFile:
-    ibmq_guadalupe_calibrations = "../../../data/ibmq_guadalupe_calibrations.csv"
-
+    #ibmq_guadalupe_calibrations = "../../../data/ibmq_guadalupe_calibrations.csv"
+    ibmq_guadalupe_calibrations = "Try-to-finish-the-Qucloud-kit/data/ibmq_guadalupe_calibrations.csv"
+    
 class QCData:
     """ Class for a quantum computer data system.
 

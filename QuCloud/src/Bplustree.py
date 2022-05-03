@@ -117,7 +117,7 @@ class Bptree_InterNode(object): # 内部节点
     def __init__(self, M):
         if not isinstance(M, int):
             raise InitError('M must be int')
-        if M < 3:
+        if M <= 3:
             raise InitError('M must be greater then 3')
         else:
             self.__M = M
@@ -217,7 +217,7 @@ class Bptree(object):
             return n1.par
 
         def split_leaf(n2):
-            mid = (self.L + 1) // 2 
+            mid = (self.L + 1) // 2 - 1
             newleaf = Bptree_Leaf(self.L)
             newleaf.vlist = n2.vlist[mid:]
             if n2.par == None:
@@ -233,7 +233,12 @@ class Bptree(object):
                 newleaf.par = n2.par
 
             n2.vlist = n2.vlist[:mid]
-            n2.bro = newleaf
+            #if n2 have bro :n2->newleaf->n2.bro,if not : n2->n2.bro
+            if n2.bro ==None:
+                n2.bro = newleaf
+            else:
+                newleaf.bro = n2.bro
+                n2.bro = newleaf
 
         def insert_node(n):
             if not n.isleaf():
@@ -244,7 +249,9 @@ class Bptree(object):
                     insert_node(n.clist[p])
             else:
                 p = bisect_right(n.vlist, key_value)    # 确定插入位置
+                # print("n.vlist,p, key_value", n.vlist,p, key_value)   # Debug the insert point in leaf
                 n.vlist.insert(p, key_value)
+
                 self.__Size += 1
                 if n.isfull():
                     split_leaf(n)   # 叶节点分裂
@@ -273,7 +280,7 @@ class Bptree(object):
         if mi is None:
             while True:
                 for kv in leaf.vlist:
-                    if kv <= ma:
+                    if kv < ma or kv==ma:
                         result.append(kv)
                     else:
                         return result
@@ -302,6 +309,8 @@ class Bptree(object):
                 except IndexError:
                     return result
             else:
+                # min leaf (l1) and vlist id (i1), l1[i1] == key_value(mi)
+                # max leaf (l2) and vlist id (i2), l2[i2] == key_value(ma) 
                 i1, l1 = search_key(node, mi)
                 i2, l2 = search_key(node, ma)
                 if l1 is l2:
@@ -456,29 +465,21 @@ class Bptree(object):
     def leaf(self):
         return self.__leaf
 
-
-# def test():
-#     mini = 2
-#     maxi = 60
-#     testlist = []
-#     for i in range(1, 10):
-#         key = i
-#         value = i
-#         testlist.append(KeyValue(key, value))
-#     mybptree = Bptree(4, 4)
-#     for kv in testlist:
-#         mybptree.insert(kv)
-#     mybptree.delete(testlist[0])
-#     mybptree.show()
-#     print('\nkey of this b+tree is \n')
-#     print([kv.key for kv in mybptree.traversal()])
-#     print([kv.key for kv in mybptree.search(mini, maxi)])
+def test():
+    B = Bptree(4,4)
+    n = 10
+    print("---检查插入算法---")
+    for i in range(n):
+        B.insert(KeyValue(1 + i, i**2))
+    B.insert(KeyValue(0, -1))
+    print("-----------查看全部可选比特数: -------------")
+    print("size: ", B.Size)
+    print("-----------选择查看比特数为3-6的可选:-----------")
+    for i in B.search(3,10):
+        print("选择得到的键值对:",i)
+    print("------展示所有的树结构-----------")
+    B.show()
 
 
 if __name__ == '__main__':
-    B = Bptree(4,4)
-    print("---检查插入算法---")
-    for i in range(10):
-        B.insert(KeyValue(1 + i, i**2))
-    B.insert(KeyValue(0, -1))
-    print(B.Size)
+    test()

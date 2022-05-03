@@ -1,3 +1,16 @@
+# python3
+import logging
+import sys
+import time
+import os
+from typing import Dict, List, Optional, Any
+sys.path.append("C:/Users/86178/Desktop/Sophomore_work/Quantum Computer/QuCloud-kit/Try-to-finish-the-Qucloud-kit")
+
+from QuCloud.src.HTree import Hierarchy_tree
+from QuCloud.src.data.coluping_graph import Graph, change_Graph_to_List
+
+log = logging.getLogger(__name__)
+
 #-*- coding:utf-8 –*-
 
 # 创建关系矩阵
@@ -60,7 +73,7 @@ def get_modularity(node_list, node_club, club_list, node_matrix):
         Q = Q + e[i][i]-ai**2  #对角迹之和减去ai的平方
     return Q, e, a, node_club  #返回Q和e列表，a列表，当前的节点标签
 
-def get_F(k, club_list, node_club, e, a):
+def get_F(k, club_list, node_club, List, List_node, List_edge, e, a, w):
     DeltaQs = []
     DeltaQs_i = []
     DeltaQs_j = []
@@ -89,15 +102,27 @@ def get_F(k, club_list, node_club, e, a):
                 if E_num!=0:
                     E=E/E_num
                 V=V/V_num
-                E=(100-E)/100
-                V=(100-V)/100
-                DeltaQ = (2*(e[i][j]-a[i]*a[j])  + w*(E)*(V)) #第i和第j进行合并成社团的变化Q值，乘而由于只算一遍，但之前是除了2，相当于是变化的
+                # float error to true
+                E = 1-E
+                V = 1-V
+                # % to float
+                # E=(100-E)/100
+                # V=(100-V)/100
+                DeltaQ = (2*(e[i][j]-a[i]*a[j])  + w*(E)*(V)) # 第i和第j进行合并成社团的变化Q值，乘而由于只算一遍，但之前是除了2，相当于是变化的
                 DeltaQs.append(DeltaQ)
                 DeltaQs_i.append(i)  #第i社团
                 DeltaQs_j.append(j)  #第j社团
     return DeltaQs,DeltaQs_i,DeltaQs_j
     
-def fast_newman(node_list, List,List_edge,List_node,n ):
+def fast_newman(node_list, List, List_edge,List_node,n,w):
+    """
+        use the quantum computer graph to make a tree
+        parameter:
+        node_list : node's name like [node0,node1,...,node4]
+        List : the edge like [[0,1],[1,2],[1,3],[3,4]]
+        List_edge : the edge values like [0.005,0.012,0.01,0.013]
+        List_node : the node values like [1.4,3.5,3.3,3.3,3.0]
+    """
     adjacent_matrix=create_relation_matrix(List, n)
     n = len(adjacent_matrix)
     max_id = n
@@ -112,7 +137,7 @@ def fast_newman(node_list, List,List_edge,List_node,n ):
     for t in range(n-1):   # 合并n-1次
         Q, e, a, node_club = get_modularity(node_list, node_club, club_list, adjacent_matrix)
         k = len(e)  # 社团数目
-        DeltaFs,DeltaFs_i,DeltaFs_j = get_F(k, club_list, node_club, e, a)
+        DeltaFs,DeltaFs_i,DeltaFs_j = get_F(k, club_list, node_club, List, List_node, List_edge, e, a, w)
         maxDeltaQ = max(DeltaFs)  # 选择最大Q值的社团进行合并
         id_club = DeltaFs.index(maxDeltaQ) #找到最大deltaq的位置
         i = DeltaFs_i[id_club]   #找出第一个社团
@@ -124,7 +149,7 @@ def fast_newman(node_list, List,List_edge,List_node,n ):
         id2 = list_unique([club_list[item] for item in c_id2])  # 找到社团j的所有节点
         HT.merge_node(c_id1+c_id2, c_id1, c_id2)
 
-        print(c_id1+c_id2 ,c_id1, c_id2, id1, id2,club_list,node_club)
+        # print(c_id1+c_id2 ,c_id1, c_id2, id1, id2,club_list,node_club)
         for item in c_id1:
             club_list[item] = max_id #将社团i的标号全部改为新的标签号
 
@@ -134,3 +159,27 @@ def fast_newman(node_list, List,List_edge,List_node,n ):
         Z.append([id1, id2, len(c_id1+c_id2)]) #修改的所有的节点以及修改的数量
         step = step + 1  #步数+1
     return HT
+
+if __name__ == "__main__":
+    qubit_number=5               #量子位数
+    value_error_list=[0.014,0.035,0.033,0.033,0.030]
+    graph=Graph()
+    for i in range(qubit_number):
+        graph.addVertex(i,value_error_list[i])
+    graph.addEdge(0,1,0.005)
+    graph.addEdge(1,2,0.012)
+    graph.addEdge(1,3,0.010)
+    graph.addEdge(3,4,0.013)
+    #权重
+    w=1
+    List, List_edge, List_node, node_list = change_Graph_to_List(graph)
+    # for i in range(qubit_number):
+        # print (fast_newman(node_list, List,List_edge,List_node, qubit_number, i+1))
+    print("List",List)
+    print("List_edge",List_edge)
+    print("List_node",List_node)
+    print("node_list",node_list)
+    print("qubit_number",qubit_number)
+    HT = fast_newman(node_list, List,List_edge,List_node, qubit_number, w=w)
+    print("层次遍历")
+    HT.breadth_travel(HT.root)
