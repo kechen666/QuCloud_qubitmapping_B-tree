@@ -3,7 +3,9 @@ import logging
 import sys
 import time
 import os
+import itertools
 from typing import Dict, List, Optional, Any
+
 sys.path.append("C:/Users/86178/Desktop/Sophomore_work/Quantum Computer/QuCloud-kit/Try-to-finish-the-Qucloud-kit")
 
 from QuCloud.src.HTree import Hierarchy_tree
@@ -20,10 +22,12 @@ def create_relation_matrix(List, n):
         adjacent_matrix[relation[0]][relation[1]] = 1
         adjacent_matrix[relation[1]][relation[0]] = 1
     return adjacent_matrix
+
 # 输出列表
 def printf(List):
     for x in List:
         print (x)
+
 # 列表去重
 def list_unique(List):
     new_list = []
@@ -31,6 +35,7 @@ def list_unique(List):
         if id not in new_list:
             new_list.append(id)
     return new_list
+
 # 创建矩阵，number为矩阵一维个数，amount为填充数字
 def create_matrix(number, amount):
     matrix = []
@@ -44,6 +49,10 @@ def create_matrix(number, amount):
 def find_index(List, node):
     return [i for i, j in enumerate(List) if j == node]
 
+#用于列表查看,不考虑列表内元素顺便的对比
+def find_index_set(List, edge):
+    return [i for i, j in enumerate(List) if j == edge]
+
 # 获取模块度
 def get_modularity(node_list, node_club, club_list, node_matrix):
     uni = list_unique(club_list)
@@ -51,7 +60,7 @@ def get_modularity(node_list, node_club, club_list, node_matrix):
     for node in uni:                            # node 相当于label社团标签
         idices = find_index(club_list, node)    # 找到标签在club_list中的位置
         for i in idices:                        # 遍历所有label的位置
-            node_club[i] = uni.index(node)      # node在标签中的位置,并将node_club中club_list所在的位置设为当前uni.index所在的位置，表示交换后的club_list
+            node_club[i] = uni.index(node)      # node在标签中的位置,并将node_club设为当前uni.index所在的位置,[0,0,1,0,.........,], max is len(uni)-1
     Q = 0
     m = sum([sum(node) for node in node_matrix])/2  # 网络的边的数目
     k = len(list_unique(node_club))  # 当前社团数目
@@ -74,25 +83,65 @@ def get_modularity(node_list, node_club, club_list, node_matrix):
     return Q, e, a, node_club  #返回Q和e列表，a列表，当前的节点标签
 
 def get_F(k, club_list, node_club, List, List_node, List_edge, e, a, w):
+    """
+        计算得到F值的列表,以及F值对应的两个社团的id号
+        param:
+            k : 当前社团数
+            club_list : 节点对应的社团号[0,max_id] [0,1,2,3,...N] -> [N+1,N+1,N+2,N+2,4,........,N] (the first N is max_id, maybe now max_id is N+2)
+            node_club : 节点对应的社团号[0,k-1] [0,0,0,..........,0] -> [0,0,1,0,1,2,.........,]
+            List : the edge like [[0,1],[1,2],[1,3],[3,4]]            
+            List_node : the node values like [1.4,3.5,3.3,3.3,3.0]
+            List_edge : the edge values like [0.005,0.012,0.01,0.013]
+            e : 社团内度/总图度比值,
+            a : 社团内外度/总图度比值
+            增值即为 : 2*(e[i][j]-a[i]*a[j])
+    """
     DeltaQs = []
     DeltaQs_i = []
     DeltaQs_j = []
+    # make the i community and the j community to a community
     for i in range(k):
         for j in range(k):
             if i != j:
+                """
+                    c_id1 : the node index about the i community eq. the node id. eg. i=0 [0,1,3]
+                    c_id2 : the node index about the j community eq. the node id. eg. j=1 [2,4]
+                    id1 : the label of the i community. the value in the club_list. >= first_max_id maybe is [8]
+                    id2 : the label of the j community. the value in the club_list. >= first_max_id maybe is [9]
+                    E : the new community's aver CNOT Fidelity(1 - the aver error)
+                    V : the new community's aver read Fidelity(1 - the aver error)
+                """
+                # if i%100 == 2 and j%100 ==3:
+                    # first = time.time()
                 c_id1 = find_index(node_club, i)  # 获取社团i的eg[0,1,2]
                 c_id2 = find_index(node_club, j)  # 获取社团j的标号[3,4]
-                id1 = list_unique([club_list[item] for item in c_id1])  # 找到社团i的标签eg [7]
-                id2 = list_unique([club_list[item] for item in c_id2])  # 找到社团j的所有节点[8]
                 E=0
                 E_num=0
                 V=0
                 V_num=0
-                for item in List: #遍历所有的边
-                    if (club_list[item[0]] in id1 and club_list[item[1]] in id1) or (club_list[item[0]] in id2 and club_list[item[1]] in id2) or (club_list[item[0]] in id1 and club_list[item[1]] in id2) or (club_list[item[0]] in id2 and club_list[item[1]] in id1):  #如果两个节点的标签在合并的社团内，则添加进去
-                        for edge_index in find_index(List, item):
-                            E=E+List_edge[edge_index]
-                            E_num+=1
+                # compute the E way1:
+                # for item in List: # 遍历所有的边
+                #     if (club_list[item[0]] in id1 and club_list[item[1]] in id1) or (club_list[item[0]] in id2 and club_list[item[1]] in id2) or (club_list[item[0]] in id1 and club_list[item[1]] in id2) or (club_list[item[0]] in id2 and club_list[item[1]] in id1):  #如果两个节点的标签在合并的社团内，则添加进去
+                #         for edge_index in find_index(List, item):
+                #             E=E+List_edge[edge_index]
+                #             E_num+=1
+
+                # compute the E, E is the aver edge error between i and j. way2
+                for node1 in c_id1:
+                    for node2 in c_id2:
+                        if node1!=node2:
+                            if [node1,node2] in List:
+                                for edge_index in find_index(List, [node1,node2]):
+                                    E=E+List_edge[edge_index]
+                                    E_num+=1
+                            elif [node2,node1] in List:
+                                for edge_index in find_index(List, [node2,node1]):
+                                    E=E+List_edge[edge_index]
+                                    E_num+=1
+                
+                # # if i%100 == 2 and j%100 ==3:
+                #     # print(f"the {i} community and the {j} community to be a community,the compute E time: ", time.time()-first, "\n the edge number is", len(c_id1)*len(c_id2))
+                #     # first = time.time()
                 for x in c_id1:
                     V=V+List_node[x]
                     V_num+=1
@@ -135,9 +184,14 @@ def fast_newman(node_list, List, List_edge,List_node,n,w):
     HT = Hierarchy_tree()
     HT.HT_init_leafnode(club_list)
     for t in range(n-1):   # 合并n-1次
+        # print(f"--------------社区划分的第{t+1}次-----------")
+        # first=time.time()
         Q, e, a, node_club = get_modularity(node_list, node_club, club_list, adjacent_matrix)
         k = len(e)  # 社团数目
         DeltaFs,DeltaFs_i,DeltaFs_j = get_F(k, club_list, node_club, List, List_node, List_edge, e, a, w)
+        # print(f"社区划分的第{t+1}次的计算F时间: ",time.time()-first)
+
+        
         maxDeltaQ = max(DeltaFs)  # 选择最大Q值的社团进行合并
         id_club = DeltaFs.index(maxDeltaQ) #找到最大deltaq的位置
         i = DeltaFs_i[id_club]   #找出第一个社团
@@ -149,7 +203,7 @@ def fast_newman(node_list, List, List_edge,List_node,n,w):
         id2 = list_unique([club_list[item] for item in c_id2])  # 找到社团j的所有节点
         HT.merge_node(c_id1+c_id2, c_id1, c_id2)
 
-        # print(c_id1+c_id2 ,c_id1, c_id2, id1, id2,club_list,node_club)
+        # print(c_id1+c_id2 ,c_id1, c_id2, id1, id2,club_list,node_club), 组合之后,将标签改为 max_id+1
         for item in c_id1:
             club_list[item] = max_id #将社团i的标号全部改为新的标签号
 
