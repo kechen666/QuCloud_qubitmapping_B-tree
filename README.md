@@ -9,8 +9,8 @@ QuCloud 是2021年HPCA论文QuCloud: A New Qubit Mapping Mechanism for Multi-pro
 Because the author's code is not open source, but I want to reproduce their work. So I produce the QuCloud-kit.
 This should be the first time I completed a complete project by myself. So if there are any shortcomings, you can raise them for me to improve.
 ## Cide structure
-doc中的PDF，存放着实验的基本过程和结论。
-Qucloud/src中，主要存放着实现的代码。
+* doc中的PDF，存放着实验的基本过程和结论发现。
+* Qucloud/src中，主要存放着实现的代码。
 ## Test Data
 1. from IBM.
 2. 使用全连接图。
